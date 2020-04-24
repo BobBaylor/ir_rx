@@ -6,7 +6,10 @@
 
     We use the pigpio callback and timeout features to capture tranmissions.
 
-    Time is in us and frequencey in MHz to make easy conversions.
+    Internally, time is in us and frequencey in MHz to make easy conversions.
+
+    I see a lot of repeat codes. I need to be carefull to not mute/unmute/mute/unmute;
+    volume up/down probably doesn't matter if I get a repeat
 """
 
 import time
@@ -271,24 +274,22 @@ def test(opts):
     assert cb_func        # the daemon might not be running
 
     t_start = time.time()
-    done = False        # loop until our 10 seconds elapses
+    done = False                        # loop until our 10 seconds elapses
     while not done:
         # each time we rx a complete code, we stop looking
         rcvr.look_for_a_code = True     # keep telling the IrReceiver to look
 
-        while rcvr.look_for_a_code:
-            for a_cmd in rcvr.get_commands():
-                print(a_cmd)            # tuple of (address, data)
+        for a_cmd in rcvr.get_commands():
+            print(a_cmd)                # tuple of (address, data)
 
-            if time.time() > t_start + 10:  # don't run forever
-                rcvr.close()
-                done = True
-                break
-            time.sleep(0.1)
+        if time.time() > t_start + 10:  # don't run forever
+            rcvr.close()
+            done = True
+        time.sleep(0.1)
 
     rcvr.pig.stop() # Disconnect from Pi.
 
-    # show what we captured - should be empty bc get_commands() drains it
+    # show what we captured - should be empty bc get_commands() drains codes
     for a_code in rcvr.codes:
         rcvr.show_code(a_code)
 
