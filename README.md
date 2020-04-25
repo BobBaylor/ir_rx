@@ -21,6 +21,7 @@ Python libraries you will need:
 * pigpio
 * docopt
 docopt is only needed for the CLI to test my IrReceiver class. 
+
 pigpio does all real work in a daemon that needs to run for any of this to work. I put a line in `/etc/rc.local` 
 ```
 sudo /usr/bin/pigpiod
