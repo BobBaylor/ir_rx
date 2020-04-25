@@ -1,7 +1,7 @@
 # ir_rx.py
 # receive IR remote transmisions and (eventually) operate a volume control
 """Notes:
-    I've flipped the mar-space terminology bc the bit information is actually in the spaces
+    I've flipped the mark-space terminology bc the bit information is actually in the spaces
     and that seems backwards to me.
 
     We use the pigpio callback and timeout features to capture tranmissions.
@@ -50,7 +50,7 @@ class IrReceiver():
                     '--verbose': False,
                    }
     """
-    def __init__(self, opts):
+    def __init__(self, pig, opts):
         self.opts = opts
         self.pin_ir = int(opts['--pin'])
         self.pre_us = int(opts['--pre']) * 1000
@@ -59,16 +59,19 @@ class IrReceiver():
         self.glitch_us = int(opts['--glitch'])
         self.short = int(opts["--short"])
 
-        self.pig = pigpio.pi()  # open the pi gpio
+        self.pig = pig
 
         if self.opts['--verbose']:
             hdw_ver = self.pig.get_hardware_revision()
             print('Found hardware version %06x and using GPIO%02d'%(hdw_ver, self.pin_ir))
 
-        # setup the pin, the glitch filter, and a pull on the pin
+        # setup the pin, the glitch filter, and add a pullup on the pin
         self.pig.set_mode(self.pin_ir, pigpio.INPUT)
         self.pig.set_glitch_filter(self.pin_ir, int(opts['--glitch'])) # Ignore glitches.
         self.pig.set_pull_up_down(self.pin_ir, pigpio.PUD_UP)
+        # install the callback
+        cb_func = self.pig.callback(self.pin_ir, pigpio.EITHER_EDGE, self.cbf)
+        assert cb_func        # the daemon might not be running
 
         self.carrier_MHz = 0.04         # 40 kHz - sb a CL arg I guess
         self.last_tick = 0
@@ -268,10 +271,8 @@ def test(opts):
     """ Test the IrReceiver class.
         opts is a dict of command line options
     """
-    rcvr = IrReceiver(opts)
-    # install the callback
-    cb_func = rcvr.pig.callback(rcvr.pin_ir, pigpio.EITHER_EDGE, rcvr.cbf)
-    assert cb_func        # the daemon might not be running
+    pig = pigpio.pi()  # open the pi gpio
+    rcvr = IrReceiver(pig, opts)
 
     t_start = time.time()
     done = False                        # loop until our 10 seconds elapses
