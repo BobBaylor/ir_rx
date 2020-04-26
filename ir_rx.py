@@ -53,10 +53,10 @@ class IrReceiver():
     def __init__(self, pig, opts):
         self.opts = opts
         self.pin_ir = int(opts['--pin'])
-        self.pre_us = int(opts['--pre']) * 1000
-        self.post_ms = int(opts['--post'])
-        self.tolerance_pct = int(opts['--tolerance'])
-        self.glitch_us = int(opts['--glitch'])
+        self.pre_us = abs(int(opts['--pre'])) * 1000
+        self.post_ms = abs(int(opts['--post']))
+        self.tolerance_pct = abs(int(opts['--tolerance']))
+        self.glitch_us = abs(int(opts['--glitch']))
         self.short = int(opts["--short"])
 
         self.pig = pig
@@ -89,7 +89,7 @@ class IrReceiver():
             self.look_for_a_code = False
             self.codes.append([e[1] for e in self.events])
             if self.opts['--verbose']:
-                print('Code Found',self.events[0][0])
+                print('Event detected; pin is',self.events[0][0])
             # print('Code Found:','\n'.join(['%r:%5d'%e for e in self.events]))
         else:
             if self.opts['--verbose']:
