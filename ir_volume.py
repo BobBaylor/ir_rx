@@ -140,6 +140,9 @@ class SpiVolume():
 def test(opts):
     """ Test the SpiVolume class.
         opts is a dict of command line options
+
+        Walk the volume up, 1/2 dB every 100 ms for 5 seconds
+        then reverse, and walk the volume back down.
     """
     pig = pigpio.pi()  # open the pi gpio
     spi_vol = SpiVolume(pig, opts)

@@ -8,7 +8,8 @@
 
     Internally, time is in us and frequencey in MHz to make easy conversions.
 
-    I see a lot of repeat codes. I need to be carefull to not mute/unmute/mute/unmute;
+    I see a lot of repeat codes.
+    I added a hack to the filter out repeat mute/unmute/mute/unmute;
     volume up/down probably doesn't matter if I get a repeat
 """
 
@@ -80,6 +81,7 @@ class IrReceiver():
         self.codes = []         # all the transmissions we're storing
         self.look_for_a_code = False   # tell the instance to watch the IR. Cleared when one found
         self.last_code = None   # store the last code for use with "repeat" transmission(s)
+
 
     def end_of_code(self):
         """ We think we've captured a code.
@@ -244,18 +246,21 @@ class IrReceiver():
 
     def get_commands(self):
         """ generator to return each valid decoded code,
-            'repeat' code returns a copy of the previous code.
+            'repeat' code returns a copy of the previous code,
+                Unless the previous code was a 'mute' command.
             The function consumes the codes list.
         """
         codes_cpy = self.codes[::-1]
         self.codes = []
         while True:
             try:
-                a_code = codes_cpy.pop()
+                a_code = codes_cpy.pop()  # code list is reversed - get the oldest
             except IndexError:
                 break   # should raise StopIteration() if our copy is empty
             cycles = self.to_cycles(a_code)
             if self.is_repeat(cycles):
+                if self.last_code == (122, 26):
+                    continue        # don't repeat a mute command
                 yield self.last_code
             elif self.has_preample(cycles):
                 # it has a preamble. Check that the spaces are OK
@@ -264,7 +269,6 @@ class IrReceiver():
                     if b_ok:
                         self.last_code = (address, command,)
                         yield (address, command,)
-
 
 
 def test(opts):
@@ -292,6 +296,7 @@ def test(opts):
 
     # show what we captured - should be empty bc get_commands() drains codes
     for a_code in rcvr.codes:
+        print('oops, get_commands() let one go', end='')
         rcvr.show_code(a_code)
 
 
