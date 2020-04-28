@@ -74,7 +74,7 @@ usage_text = """
   -h --help               Show this screen.
   -a --address <A>        The Yamaha address code we respopns to [default: 122]
   -b --baud <B>           The baud in kbps [default: 100]
-  -m --mute <M>           Mute pin GPIO. [default: 25]
+  -m --mute <M>           Mute GPIO (Broadcom numbers, not J8 pins). [default: 25]
   -v --verbose            Print stuff
     """
 
@@ -82,6 +82,10 @@ usage_text = """
 class SpiVolume():
     """ A class to encapsulate the SPI controlled volume IC
     """
+    MUTE_CODE = 28
+    UP_CODE = 26
+    DOWN_CODE = 27
+
     def __init__(self, pig, opts):
         self.opts = opts
         self.pig = pig
@@ -119,22 +123,27 @@ class SpiVolume():
 
     def write_command(self, ir_cmd):
         # we only care about 3 commands: volume up, down, and mute
+        b_handled = False     # assume un-handled
         if ir_cmd[0] != self.my_address:
-            return      # ignore nec commands to another address
-        if ir_cmd[1] == 27:     # volume up
+            pass     # ignore nec commands to another address. Flag it as un-handled
+        elif ir_cmd[1] == SpiVolume.UP_CODE:     # volume up
             if self.is_muted():
                 self.mute(False)
             else:
                 self.gain += 1
                 self.write(bytes([self.gain,self.gain,]))
-        elif ir_cmd[1] == 28:   # volume down
+            b_handled = True     # Flag it as handled
+        elif ir_cmd[1] == SpiVolume.DOWN_CODE:   # volume down
             if self.is_muted():
                 self.mute(False)
             else:
                 self.gain -= 1
                 self.write(bytes([self.gain,self.gain,]))
-        elif ir_cmd[1] == 26:   # mute (toggle)
+            b_handled = True     # Flag it as handled
+        elif ir_cmd[1] == SpiVolume.MUTE_CODE:   # mute (toggle)
             self.mute()         # toggle
+            b_handled = True     # Flag it as handled
+        return b_handled
 
 
 def test(opts):
@@ -149,18 +158,20 @@ def test(opts):
 
     t_start = time.time()
     done = False                        # loop until our 10 seconds elapses
-    dir = 1                         # start going up
+    i_direction = 1                     # start going up
     switched = False
     spi_vol.gain = 64   # start at -95 + 64*.5 dB = -63 dB
     while not done:
-        if dir == 1:
-            spi_vol.write_command((122, 27))  # volume up
+        if i_direction == 1:
+            spi_vol.write_command((int(opts['--address']), SpiVolume.UP_CODE))  # volume up
         else:
-            spi_vol.write_command((122, 28))  # volume down
+            spi_vol.write_command((int(opts['--address']), SpiVolume.DOWN_CODE))  # volume down
 
-        if not switched and time.time() > t_start + 5:  # then go down
-            dir = -dir              # -95 + 173*0.5 dB = -8.5 dB
-            switched = True
+        if time.time() > t_start + 5:  # then go down
+            if not switched:
+                print(' -- going down --')
+                i_direction = -i_direction              # -95 + 173*0.5 dB = -8.5 dB
+                switched = True
 
         if time.time() > t_start + 10:  # don't run forever
             done = True
@@ -175,49 +186,3 @@ if __name__ == '__main__':
     test(opts)
     if opts['--verbose']:
         print('done')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

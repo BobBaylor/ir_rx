@@ -9,8 +9,14 @@
     Internally, time is in us and frequencey in MHz to make easy conversions.
 
     I see a lot of repeat codes.
-    I added a hack to the filter out repeat mute/unmute/mute/unmute;
-    volume up/down probably doesn't matter if I get a repeat
+    I added a hack to the filter out repeat mute/unmute/mute/unmute.
+        volume up/down probably doesn't matter if I get a repeat; In fact, that's a feature.
+
+    This was designed to receive the Yamaha remote code which follow the published rules
+    that the second and fourth bytes are compliments of the first and third. Trying this with
+    with my Tivo and Samsung remotes, I see that they don't seem to follow this rule.
+    Furthermore, the Tivo doesn't uses an equal time on-off preamble instead of the 1x 2x
+    that I expected. Curious.
 """
 
 import time
@@ -51,6 +57,8 @@ class IrReceiver():
                     '--verbose': False,
                    }
     """
+    MUTE_CODE = 28
+
     def __init__(self, pig, opts):
         self.opts = opts
         self.pin_ir = int(opts['--pin'])
@@ -91,8 +99,8 @@ class IrReceiver():
             self.look_for_a_code = False
             self.codes.append([e[1] for e in self.events])
             if self.opts['--verbose']:
-                print('Event detected; pin is',self.events[0][0])
-            # print('Code Found:','\n'.join(['%r:%5d'%e for e in self.events]))
+                print('\nEvent detected; pin is',self.events[0][0], ':', end='')
+                print(' '.join(['%d'%e[1] for e in self.events]))
         else:
             if self.opts['--verbose']:
                 print("Short code <", self.short)
@@ -162,7 +170,8 @@ class IrReceiver():
 
     def has_preample(self, cycles):
         # detect the nec preamble
-        return self.compare(cycles, [360, 180,])
+        return self.compare(cycles, [360, 180,]) # or self.compare(cycles, [180, 180,])
+
 
 
     def str_cycles(self, cycles):
@@ -259,9 +268,10 @@ class IrReceiver():
                 break   # should raise StopIteration() if our copy is empty
             cycles = self.to_cycles(a_code)
             if self.is_repeat(cycles):
-                if self.last_code == (122, 26):
+                if self.last_code and self.last_code[1] == IrReceiver.MUTE_CODE:
                     continue        # don't repeat a mute command
                 yield self.last_code
+
             elif self.has_preample(cycles):
                 # it has a preamble. Check that the spaces are OK
                 if self.compare(cycles[2::2], [24.0]*32):
