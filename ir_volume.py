@@ -39,18 +39,18 @@
         Auxiliary SPI only.
 
                 GPIO       pin  pin    GPIO
-                3V3         1    2      5V
+         VCC -- 3V3         1    2      5V
                 2 (SDA)     3    4      5V
-                3 (SCL)     5    6      0V
-                4           7    8      14 (TXD)
-                0V          9   10      15 (RXD)
+         IR --  3 (SCL)     5    6      0V -- GND
+         WET -- 4           7    8      14 (TXD)
+                0V          9   10      15 (RXD) -- wet heartbeat
                 17 (ce1)   11   12      18 (ce0)
                 27         13   14      0V
                 22         15   16      23
                 3V3        17   18      24
-                10 (MOSI)  19   20      0V
-                9 (MISO)   21   22      25
-                11 (SCLK)  23   24      8 (CE0)
+         SDI -- 10 (MOSI)  19   20      0V
+                9 (MISO)   21   22      25 -- MUTE_BAR
+         CLK -- 11 (SCLK)  23   24      8 (CE0) -- CS
                 0V         25   26      7 (CE1)
         Init with a dict of all the options when using it stand-alone.
             opts = {
