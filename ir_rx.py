@@ -52,8 +52,8 @@ class IrReceiver():
                     '--file': '',
                     '--post': 15,
                     '--raw': '',
-                    '--short': 2,
-                    '--tolerance': 15,
+                    '--short': 2,        # ignore codes w/ < 2 events
+                    '--tolerance': 15,   # percent deviation from expected periods
                     '--verbose': False,
                    }
     """
@@ -72,7 +72,7 @@ class IrReceiver():
 
         if self.opts['--verbose']:
             hdw_ver = self.pig.get_hardware_revision()
-            print('Found hardware version %06x and using GPIO%02d'%(hdw_ver, self.pin_ir))
+            print('IrRx found hardware version %06x and using GPIO%02d'%(hdw_ver, self.pin_ir))
 
         # setup the pin, the glitch filter, and add a pullup on the pin
         self.pig.set_mode(self.pin_ir, pigpio.INPUT)
@@ -139,8 +139,8 @@ class IrReceiver():
                 self.end_of_code()
 
 
-    def compare(self, observed, expected):
-        """ Handy function to compare an observed list with a test list
+    def match(self, observed, expected):
+        """ Handy function to match an observed list with a test list
             including a tolerance for error in the timing.
             Returns True if observed matches expected within tolerance.
         """
@@ -165,12 +165,12 @@ class IrReceiver():
 
     def is_repeat(self, cycles):
         # detect the nec 'repeat' transmission
-        return self.compare(cycles, [360, 90, 22.5])
+        return self.match(cycles, [360, 90, 22.5])
 
 
     def has_preample(self, cycles):
         # detect the nec preamble
-        return self.compare(cycles, [360, 180,]) # or self.compare(cycles, [180, 180,])
+        return self.match(cycles, [360, 180,]) # or self.match(cycles, [180, 180,])
 
 
 
@@ -185,9 +185,9 @@ class IrReceiver():
             Return a '1', '0', (or 'x' if it matches neither).
             Used by decode_nec() to make a binary repr of the data
         """
-        if self.compare([mark], [21.0]):
+        if self.match([mark], [21.0]):
             return '0'
-        if self.compare([mark], [66.0]):
+        if self.match([mark], [66.0]):
             return '1'
         return 'x'  # not a 1 or a 0
 
@@ -238,7 +238,7 @@ class IrReceiver():
             print('repeat')
         elif self.has_preample(cycles):
             # it has a preamble. Check that the spaces are OK
-            if self.compare(cycles[2::2], [24.0]*32):
+            if self.match(cycles[2::2], [24.0]*32):
                 address, command, b_ok = self.decode_nec(cycles[3::2])
                 if b_ok:
                     print('code', address, command, b_ok)
@@ -274,7 +274,7 @@ class IrReceiver():
 
             elif self.has_preample(cycles):
                 # it has a preamble. Check that the spaces are OK
-                if self.compare(cycles[2::2], [24.0]*32):
+                if self.match(cycles[2::2], [24.0]*32):
                     address, command, b_ok = self.decode_nec(cycles[3::2])
                     if b_ok:
                         self.last_code = (address, command,)

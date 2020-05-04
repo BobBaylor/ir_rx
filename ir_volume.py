@@ -99,7 +99,8 @@ class SpiVolume():
 
         if self.opts['--verbose']:
             hdw_ver = self.pig.get_hardware_revision()
-            print('Found hardware ver %06x and using %s kbaud'%(hdw_ver, opts['--baud']))
+            print('Volume found hardware ver %06x'%(hdw_ver))
+            print('  and using SPI0 at %s kbaud'%(opts['--baud']))
 
 
     def write(self, data):
