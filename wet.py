@@ -5,6 +5,7 @@
 
 import time
 from datetime import datetime
+import pigpio
 
 
 class WaterLogger():
