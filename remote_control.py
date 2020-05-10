@@ -13,6 +13,7 @@ def init_devs(pig=None):
     vol_opts = {'--address': 120,
                 '--baud': 500,
                 '--mute': 25,
+                '--file': 'ir_vol.txt',
                 '--verbose': True,
                 '--address': 122,
                }

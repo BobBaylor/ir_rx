@@ -61,19 +61,22 @@
                    }
 """
 
+from datetime import datetime
 import time
+
 import docopt
 import pigpio
 
 usage_text = """
  Usage:
-  ir_volume  [--address <A>] [--baud <B>] [--mute <M>] [--verbose]
+  ir_volume  [--address <A>] [--baud <B>] [--log <L>] [--mute <M>] [--verbose]
   ir_volume -h | --help
 
  Options:
   -h --help               Show this screen.
   -a --address <A>        The Yamaha address code we respopns to [default: 122]
   -b --baud <B>           The baud in kbps [default: 100]
+  -l --log <L>            Log volume events to a file
   -m --mute <M>           Mute GPIO (Broadcom numbers, not J8 pins). [default: 25]
   -v --verbose            Print stuff
     """
@@ -91,6 +94,7 @@ class SpiVolume():
         self.pig = pig
         self.my_address = int(opts['--address'])
         self.mute_pin_bar = int(opts['--mute'])
+        self.log_file = opts['--log']
         self.gain = 0   # same gain is sent to L and R channels
 
         self.spi_ifc = pig.spi_open(0, int(opts['--baud'])*1000, 0x00C0)
@@ -106,6 +110,11 @@ class SpiVolume():
     def write(self, data):
         if self.opts['--verbose']:
             print('write', data)
+        if self.log_file:
+            with open(self.log_file, 'a') as fout:
+                time_now = datetime.now()
+                fout.write('%s\n' % time_now.strftime('%y-%m-%d %H:%M:%S.%f'))
+
         self.pig.spi_xfer(self.spi_ifc, data)
 
 
