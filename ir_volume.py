@@ -108,12 +108,12 @@ class SpiVolume():
 
 
     def write(self, data):
+        data_hex = '%02X %02X'%tuple(data)
         if self.opts['--verbose']:
-            print('write', data)
+            print('write', data_hex)
         if self.log_file:
             with open(self.log_file, 'a') as fout:
                 time_str = datetime.now().strftime('%y-%m-%d %H:%M:%S.%f')
-                data_hex = '%02X %02X'%tuple(data)
                 fout.write('%s %s\n'%(data_hex, time_str))
 
         self.pig.spi_xfer(self.spi_ifc, data)
