@@ -122,6 +122,11 @@ class SpiVolume():
         return 0 if self.pig.read(self.mute_pin_bar) else 1 # inverted
 
 
+    def add_gain(self, inc_val):
+        self.gain += inc_val * 2    # 1 dB steps are fine enough
+        self.gain = max(min(self.gain, 255), 0)
+
+
     def write_command(self, ir_cmd):
         # we only care about 3 commands: volume up, down, and mute
         b_handled = False     # assume un-handled
@@ -131,14 +136,14 @@ class SpiVolume():
             if self.is_muted():
                 self.mute(False)
             else:
-                self.gain += 1
+                self.add_gain(1)
                 self.write(bytes([self.gain,self.gain,]))
             b_handled = True     # Flag it as handled
         elif ir_cmd[1] == SpiVolume.DOWN_CODE:   # volume down
             if self.is_muted():
                 self.mute(False)
             else:
-                self.gain -= 1
+                self.add_gain(-1)
                 self.write(bytes([self.gain,self.gain,]))
             b_handled = True     # Flag it as handled
         elif ir_cmd[1] == SpiVolume.MUTE_CODE:   # mute (toggle)
