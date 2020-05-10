@@ -10,8 +10,7 @@ def init_devs(pig=None):
     """
     if not pig:
         pig = pigpio.pi()  # open the pi gpio
-    vol_opts = {'--address': 120,
-                '--baud': 500,
+    vol_opts = {'--baud': 500,
                 '--mute': 25,
                 '--file': 'ir_vol.txt',
                 '--verbose': True,
@@ -35,7 +34,7 @@ def init_devs(pig=None):
 def forever(spi_vol, rcvr):
     """Loop forever, passing ir commands from the ir receiver to the volume control
     """
-    while True :
+    while True:
         # each time we rx a complete code, we stop looking
         rcvr.look_for_a_code = True     # keep telling the IrReceiver to look
         for a_cmd in rcvr.get_commands():

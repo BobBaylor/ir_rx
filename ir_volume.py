@@ -112,8 +112,9 @@ class SpiVolume():
             print('write', data)
         if self.log_file:
             with open(self.log_file, 'a') as fout:
-                time_now = datetime.now()
-                fout.write('%s\n' % time_now.strftime('%y-%m-%d %H:%M:%S.%f'))
+                time_str = datetime.now().strftime('%y-%m-%d %H:%M:%S.%f')
+                data_hex = '%02X %02X'%tuple(data)
+                fout.write('%s %s\n'%(data_hex, time_str))
 
         self.pig.spi_xfer(self.spi_ifc, data)
 
@@ -146,14 +147,14 @@ class SpiVolume():
                 self.mute(False)
             else:
                 self.add_gain(1)
-                self.write(bytes([self.gain,self.gain,]))
+                self.write(bytes([self.gain, self.gain,]))
             b_handled = True     # Flag it as handled
         elif ir_cmd[1] == SpiVolume.DOWN_CODE:   # volume down
             if self.is_muted():
                 self.mute(False)
             else:
                 self.add_gain(-1)
-                self.write(bytes([self.gain,self.gain,]))
+                self.write(bytes([self.gain, self.gain,]))
             b_handled = True     # Flag it as handled
         elif ir_cmd[1] == SpiVolume.MUTE_CODE:   # mute (toggle)
             self.mute()         # toggle
