@@ -13,7 +13,7 @@ def init_devs(pig=None):
     vol_opts = {'--baud': 500,
                 '--mute': 25,
                 '--file': 'ir_vol.txt',
-                '--verbose': True,
+                '--verbose': False,
                 '--address': 122,
                }
     spi_vol = SpiVolume(pig, vol_opts)
