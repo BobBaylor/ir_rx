@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """remote_control.py
    be a remote volume control
 """
@@ -13,7 +13,7 @@ def init_devs(pig=None):
         pig = pigpio.pi()  # open the pi gpio
     vol_opts = {'--baud': 500,
                 '--mute': 25,
-                '--file': 'ir_vol.txt',
+                '--file': '/home/pi/ir_rx/ir_vol.txt',
                 '--verbose': False,
                 '--address': 122,
                }
