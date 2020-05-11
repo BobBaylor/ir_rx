@@ -2,7 +2,7 @@
    be a remote volume control
 """
 import pigpio
-from ir_volume import SpiVolume
+from spi_volume import SpiVolume
 from ir_rx import IrReceiver
 
 def init_devs(pig=None):
