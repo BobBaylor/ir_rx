@@ -162,7 +162,7 @@ class SpiVolume():
            and we only care about 3 commands: volume up, down, and mute
         """
         b_handled = False     # assume un-handled
-        if ir_cmd[0] != self.my_address:
+        if ir_cmd and ir_cmd[0] != self.my_address:
             pass     # ignore nec commands to another address. Flag it as un-handled
         elif ir_cmd[1] == SpiVolume.UP_CODE:     # volume up
             if self.is_muted():
