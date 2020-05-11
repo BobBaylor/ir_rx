@@ -1,11 +1,15 @@
-# ir_volume.py
 """
+ir_volume.py
+    Encapsulate the SPI control of a TI PGA2311 stereo volume control IC.
+
         Communication is a 16 bit tranfer R7, R6.. R0, L7, L6.. L0
             CS asserts low
             device SDI is latched on the rising edge of clock
             device SDO changes on the falling edge
             CS de-asserts high
 
+        The raspberry pi SPI configuration word is:
+        bit
         21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
          b  b  b  b  b  b  R  T  n  n  n  n  W  A u2 u1 u0 p2 p1 p0  m  m
          0  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1  0  0  0  0  0  0
@@ -38,6 +42,7 @@
         bbbbbb defines the word size in bits (0-32). The default (0) sets 8 bits per word.
         Auxiliary SPI only.
 
+        The raspberry pi GPIO pins that I'm using are:
                 GPIO       pin  pin    GPIO
          VCC -- 3V3         1    2      5V
                 2 (SDA)     3    4      5V
@@ -83,7 +88,9 @@ usage_text = """
 
 
 class SpiVolume():
-    """ A class to encapsulate the SPI controlled volume IC
+    """ A class to encapsulate the SPI controlled volume IC.
+        The NEC IR address is a c-tor option but we hard-code the key codes here
+        for volume up/down and mute.
     """
     MUTE_CODE = 28
     UP_CODE = 26
@@ -108,6 +115,9 @@ class SpiVolume():
 
 
     def write(self, data):
+        """ Send the gain word to the volume IC. data is bytes[2] suited to the
+            SPI transfer function.
+        """
         data_hex = '%02X %02X'%tuple(data)
         if self.opts['--verbose']:
             print('write', data_hex)
@@ -120,7 +130,9 @@ class SpiVolume():
 
 
     def mute(self, b_mute=None):
-        # no arg to toggle. Otherwise set mute
+        """ When called with no arg, mute() toggles the mute state. Otherwise set mute.
+            The hardware pin is inverted (Low to mute).
+        """
         mute_bar = self.pig.read(self.mute_pin_bar)
         if b_mute is None:
             self.pig.write(self.mute_pin_bar, 0 if mute_bar else 1)     # toggle
@@ -129,16 +141,26 @@ class SpiVolume():
 
 
     def is_muted(self):
+        """ Return True if the volume IC is in mute state, else False.
+            The hardware pin is inverted (Low to mute).
+        """
         return 0 if self.pig.read(self.mute_pin_bar) else 1 # inverted
 
 
     def add_gain(self, inc_val):
+        """Commanded to increase or decrease volume, this routine limits the
+           gain value to the legal range (0 to 255).
+           Also speeds up the UI slew rate by skipping evey other volume step.
+        """
         self.gain += inc_val * 2    # 1 dB steps are fine enough
         self.gain = max(min(self.gain, 255), 0)
 
 
     def write_command(self, ir_cmd):
-        # we only care about 3 commands: volume up, down, and mute
+        """write_cmd() is called whenever we receive an IR command.
+           We only care about commands to our address
+           and we only care about 3 commands: volume up, down, and mute
+        """
         b_handled = False     # assume un-handled
         if ir_cmd[0] != self.my_address:
             pass     # ignore nec commands to another address. Flag it as un-handled

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-""" wet.py
-    water logger class
+""" capture_encoder.py
 """
 
 import time
@@ -8,8 +7,13 @@ from datetime import datetime
 import pigpio
 
 
-class WaterLogger():
-    """ A class to encapsulate the water logger
+class CaptureEncoder():
+    """ A class to encapsulate the water meter: SPWM-075 from EKM Metering
+        A single phase encoder that changes state (hi-lo or lo-hi) with every 0.05 cubic foot
+        of water that passes.
+
+        Instantiate with a dict of options:
+
             opts = {'--file': '/home/pi/wet/waterlog.txt',
                     '--meter': 4           # J8-7
                     '--led': 15            # J8-10
@@ -18,7 +22,7 @@ class WaterLogger():
                     '--debounce': 0.09
                    }
 
-        Cleanup can print total_ticks since self.time_start
+        todo: cleanup() can print total_ticks since self.time_start
     """
 
     def __init__(self, pig, opts):
@@ -52,8 +56,11 @@ class WaterLogger():
 
     def sample(self):
         """ Called continually by the main loop to service the water meter.
+            Capture the water meter state and a timestamp, flash the heartbeat LED,
+            write the timestamp to a file.
+            The file is read by some other python scripts to display the water usage
+            in various ways.
         """
-        # capture the water meter state and a timestamp
         meter_now = self.pig.input(self.meter_gpio)
         time_now = datetime.now()
 
@@ -63,6 +70,12 @@ class WaterLogger():
             led_state_next = 0 if self.pig.read(self.led_gpio) else 1
             self.pig.write(self.led_gpio, led_state_next)
 
+        """ The reed switch in the SPWM-075 doesn't seem to bounce much, but I limit
+            the maximum transition rate here just in case. Using 0.09 sec debounce, the max
+            water rate is limited to (60 * 0.748 /(2 * 0.09) = 250 gallons per minute.
+            Given that 100 psi pressure drop across a 100 feet of 3/4" pipe only results
+            in 20 gallons per minute, this seems OK.
+        """
         # after a debounce period, check if the water meter state changed
         if self.time_difference(self.time_meter, time_now) > self.time_debounce:
             if self.meter_state != meter_now:
