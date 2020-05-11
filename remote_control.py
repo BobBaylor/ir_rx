@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """remote_control.py
    be a remote volume control
 """
