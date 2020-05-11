@@ -2,6 +2,7 @@
 """remote_control.py
    be a remote volume control
 """
+import time
 import pigpio
 from spi_volume import SpiVolume
 from ir_rx import IrReceiver
@@ -41,7 +42,7 @@ def forever(spi_vol, rcvr):
         for a_cmd in rcvr.get_commands():
             # print(a_cmd)                # tuple of (address, data)
             spi_vol.write_command(a_cmd)
-
+        time.sleep(0.05)
 
 if __name__ == '__main__':
     pig, spi_vol, rcvr = init_devs()
