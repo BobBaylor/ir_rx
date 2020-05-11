@@ -261,7 +261,7 @@ class IrReceiver():
         """
         codes_cpy = self.codes[::-1]
         self.codes = []
-        while True:
+        while codes_cpy:
             try:
                 a_code = codes_cpy.pop()  # code list is reversed - get the oldest
             except IndexError:
@@ -270,7 +270,7 @@ class IrReceiver():
             if self.is_repeat(cycles):
                 if self.last_code and self.last_code[1] == IrReceiver.MUTE_CODE:
                     continue        # don't repeat a mute command
-                yield self.last_code
+                yield(self.last_code)
 
             elif self.has_preample(cycles):
                 # it has a preamble. Check that the spaces are OK
@@ -278,7 +278,7 @@ class IrReceiver():
                     address, command, b_ok = self.decode_nec(cycles[3::2])
                     if b_ok:
                         self.last_code = (address, command,)
-                        yield (address, command,)
+                        yield(address, command,)
 
 
 def test(opts):
