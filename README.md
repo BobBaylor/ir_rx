@@ -23,6 +23,10 @@ pigpio does all real work in a daemon that needs to run for any of this to work.
 ```
 sudo /usr/bin/pigpiod
 ```
-Eventually, I'll get the remote_control.py script to run in the background automatically at boot, but that part seems to hang the pi WiFi, at the moment.
+To get the remote_control.py script to run in the background automatically at boot, I put a line in crontab
+```
+@reboot sudo /home/pi/ir_rx/remote_control.py > /home/pi/ir_rx/rem.log
+```
+and that seems to do the trick. Of course, remote_control.py needs to be made executable by running chmod +x
 
 
