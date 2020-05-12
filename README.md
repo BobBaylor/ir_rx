@@ -15,11 +15,11 @@ The IR receiver IC is designed to work at a specific carrier frequency. My remot
 * ground
 * output (open collector with a 30k pull up)
 
-The TI part has over 100 dB of control range, independent control of left and right gain, a mute pin, and you can get it in a 16 pin DIP so no fancy tools required.
+The TI part has over 100 dB of control range, independent control of left and right gain, a mute pin, and you can get it in a 16 pin DIP so no fancy tools required. The gain = -95 dB + gain_value *.5 dB so a gain_value of 180 (decimal) results in -5 dB gain.
 
-Since the pi is powered from a wall wart that easily sources 1A, I just use some of the digital 5V to power the analog power converter. 
+Since the pi is powered from a wall wart that easily sources 1A, I just use some of the digital 5V to power the analog power converter.
 
-pigpio does all real work in a daemon that needs to run for any of this to work. I put a line in `/etc/rc.local` 
+pigpio does all real work in a daemon that needs to run for any of this to work. I put a line in `/etc/rc.local`
 ```
 sudo /usr/bin/pigpiod
 ```
