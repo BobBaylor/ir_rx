@@ -14,7 +14,8 @@ def init_devs(pig=None):
         pig = pigpio.pi()  # open the pi gpio
     vol_opts = {'--baud': 500,
                 '--mute': 25,
-                '--file': '/home/pi/ir_rx/ir_vol.txt',
+                '--init': 180, # init at -95 + 180 * 0.5 dB = -5 dB
+                '--file': '',  # '/home/pi/ir_rx/ir_vol.txt',
                 '--verbose': False,
                 '--address': 122,
                }

@@ -74,7 +74,7 @@ import pigpio
 
 usage_text = """
  Usage:
-  ir_volume  [--address <A>] [--baud <B>] [--file <F>] [--mute <M>] [--verbose]
+  ir_volume  [--address <A>] [--baud <B>] [--file <F>] [--init <I>] [--mute <M>] [--verbose]
   ir_volume -h | --help
 
  Options:
@@ -82,6 +82,7 @@ usage_text = """
   -a --address <A>        The Yamaha address code we respopns to [default: 122]
   -b --baud <B>           The baud in kbps [default: 100]
   -f --file <F>           Log volume events to a file
+  -i --init <I>           Initial volume value. [default: 200]
   -m --mute <M>           Mute GPIO (Broadcom numbers, not J8 pins). [default: 25]
   -v --verbose            Print stuff
     """
@@ -102,7 +103,7 @@ class SpiVolume():
         self.my_address = int(opts['--address'])
         self.mute_pin_bar = int(opts['--mute'])
         self.log_file = opts['--file']
-        self.gain = 0   # same gain is sent to L and R channels
+        self.gain = int(opts['--init'])   # same gain is sent to L and R channels
 
         self.spi_ifc = pig.spi_open(0, int(opts['--baud'])*1000, 0x00C0)
         self.pig.set_mode(self.mute_pin_bar, pigpio.OUTPUT)
@@ -112,6 +113,7 @@ class SpiVolume():
             hdw_ver = self.pig.get_hardware_revision()
             print('Volume found hardware ver %06x'%(hdw_ver))
             print('  and using SPI0 at %s kbaud'%(opts['--baud']))
+        self.write(bytes([self.gain, self.gain,]))
 
 
     def write(self, data):
@@ -122,9 +124,10 @@ class SpiVolume():
         if self.opts['--verbose']:
             print('write', data_hex)
         if self.log_file:
-            with open(self.log_file, 'a') as fout:
+            with open(self.log_file, 'w') as fout:
+                mute_str = '0' if self.is_muted() else '1'
                 time_str = datetime.now().strftime('%y-%m-%d %H:%M:%S.%f')
-                fout.write('%s %s\n'%(data_hex, time_str))
+                fout.write('%s %s %s\n'%(mute_str, data_hex, time_str))
 
         self.pig.spi_xfer(self.spi_ifc, data)
 
@@ -162,7 +165,10 @@ class SpiVolume():
            and we only care about 3 commands: volume up, down, and mute
         """
         b_handled = False     # assume un-handled
-        if ir_cmd and ir_cmd[0] != self.my_address:
+        if not ir_cmd:
+            return b_handled
+
+        if ir_cmd[0] != self.my_address:
             pass     # ignore nec commands to another address. Flag it as un-handled
         elif ir_cmd[1] == SpiVolume.UP_CODE:     # volume up
             if self.is_muted():
