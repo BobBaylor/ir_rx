@@ -59,24 +59,27 @@ class IrReceiver():
     """
     MUTE_CODE = 28
 
-    def __init__(self, pig, opts):
-        self.opts = opts
-        self.pin_ir = int(opts['--pin'])
-        self.pre_us = abs(int(opts['--pre'])) * 1000
-        self.post_ms = abs(int(opts['--post']))
-        self.tolerance_pct = abs(int(opts['--tolerance']))
-        self.glitch_us = abs(int(opts['--glitch']))
-        self.short = int(opts["--short"])
+    def __init__(self, pig, **kwargs):
+        self.kwargs = kwargs
+        self.pin_ir = int(kwargs.get('--pin', 3))
+        self.pre_us = abs(int(kwargs.get('--pre', 50))) * 1000
+        self.post_ms = abs(int(kwargs.get('--post', 15)))
+        self.tolerance_pct = abs(int(kwargs.get('--tolerance', 15)))
+        self.glitch_us = abs(int(kwargs.get('--glitch', 100)))
+        self.short = int(kwargs.get('--short', 2))
+        self.verbose = kwargs.get('--verbose', False)
+        self.raw = kwargs.get('--raw', '')
+        self.file = kwargs.get('--file', '')
 
         self.pig = pig
 
-        if self.opts['--verbose']:
+        if self.verbose:
             hdw_ver = self.pig.get_hardware_revision()
             print('IrRx found hardware version %06x and using GPIO%02d'%(hdw_ver, self.pin_ir))
 
         # setup the pin, the glitch filter, and add a pullup on the pin
         self.pig.set_mode(self.pin_ir, pigpio.INPUT)
-        self.pig.set_glitch_filter(self.pin_ir, int(opts['--glitch'])) # Ignore glitches.
+        self.pig.set_glitch_filter(self.pin_ir, self.glitch_us) # Ignore glitches.
         self.pig.set_pull_up_down(self.pin_ir, pigpio.PUD_UP)
         # install the callback
         cb_func = self.pig.callback(self.pin_ir, pigpio.EITHER_EDGE, self.cbf)
@@ -98,11 +101,11 @@ class IrReceiver():
             # normalise(events)
             self.look_for_a_code = False
             self.codes.append([e[1] for e in self.events])
-            if self.opts['--verbose']:
-                print('\nEvent detected; pin is',self.events[0][0], ':', end='')
+            if self.verbose:
+                print('\nEvent detected; pin is', self.events[0][0], ':', end='')
                 print(' '.join(['%d'%e[1] for e in self.events]))
         else:
-            if self.opts['--verbose']:
+            if self.verbose:
                 print("Short code <", self.short)
         self.events = []
 
@@ -176,7 +179,7 @@ class IrReceiver():
 
     def str_cycles(self, cycles):
         # format length: x0 x1 x2 ...
-        m_str =  '%d: '%(len(cycles),) + ' '.join(['%2.0f'%round(c) for c in cycles])
+        m_str = '%d: '%(len(cycles),) + ' '.join(['%2.0f'%round(c) for c in cycles])
         return m_str
 
 
@@ -198,8 +201,8 @@ class IrReceiver():
             Convert to bytes and perform the inversion check
             Return the address and command bytes along with a bool indicating valid
         """
-        b_str =  ''.join([self.one_mark(c) for c in marks])[::-1]  # binary, reversed
-        if self.opts['--verbose']:
+        b_str = ''.join([self.one_mark(c) for c in marks])[::-1]  # binary, reversed
+        if self.verbose:
             print('b_str', b_str)
         if 'x' in b_str:
             address, command, b_ok = 0, 0, False    # any 'x' was outside of tolerance
@@ -209,7 +212,7 @@ class IrReceiver():
             # odd values are the bitwise compliment of evens. Should sum to 255
             add_ok = i_values[0] + i_values[1] == 255
             cmd_ok = i_values[2] + i_values[3] == 255
-            if self.opts['--verbose']:
+            if self.verbose:
                 print('values', i_values)
                 print(add_ok, cmd_ok, ['{0:08b}'.format(x) for x in i_values])
             address, command, b_ok = i_values[0], i_values[2], add_ok and cmd_ok
@@ -227,11 +230,11 @@ class IrReceiver():
         """
         # print('%2d,'%len(a_code),','.join(['%5d'%(edge,) for edge in a_code]))
         cycles = self.to_cycles(a_code)
-        if self.opts['--verbose']:
+        if self.verbose:
             print('\nall cycles', self.str_cycles(cycles))
-        if self.opts['--raw']:
-            with open(self.opts['--raw'], 'a') as f_out:
-                c_str =  '%d,'%(len(cycles),) + ','.join(['%2.0f'%round(c) for c in cycles])
+        if self.raw:
+            with open(self.raw_file, 'a') as f_out:
+                c_str = '%d,'%(len(cycles),) + ','.join(['%2.0f'%round(c) for c in cycles])
                 f_out.write(c_str+'\n')
 
         if self.is_repeat(cycles):
@@ -286,7 +289,7 @@ def test(opts):
         opts is a dict of command line options
     """
     pig = pigpio.pi()  # open the pi gpio
-    rcvr = IrReceiver(pig, opts)
+    rcvr = IrReceiver(pig, **opts)
 
     t_start = time.time()
     done = False                        # loop until our 10 seconds elapses

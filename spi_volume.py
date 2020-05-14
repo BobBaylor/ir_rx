@@ -79,7 +79,7 @@ usage_text = """
 
  Options:
   -h --help               Show this screen.
-  -a --address <A>        The Yamaha address code we respopns to [default: 122]
+  -a --address <A>        The Yamaha address code we responds to [default: 122]
   -b --baud <B>           The baud in kbps [default: 100]
   -f --file <F>           Log volume events to a file
   -i --init <I>           Initial volume value. [default: 200]
@@ -97,22 +97,24 @@ class SpiVolume():
     UP_CODE = 26
     DOWN_CODE = 27
 
-    def __init__(self, pig, opts):
-        self.opts = opts
+    def __init__(self, pig, **kwargs):
+        self.kwargs = kwargs
         self.pig = pig
-        self.my_address = int(opts['--address'])
-        self.mute_pin_bar = int(opts['--mute'])
-        self.log_file = opts['--file']
-        self.gain = int(opts['--init'])   # same gain is sent to L and R channels
+        self.my_address = int(kwargs.get('--address', 122))
+        self.mute_pin_bar = int(kwargs.get('--mute', 25))
+        self.log_file = kwargs.get('--file', '')
+        self.gain = int(kwargs.get('--init', 200))   # same gain is sent to L and R channels
+        self.verbose = kwargs.get('--verbose', False)
+        self.kbaud = kwargs.get('--baud', 100) * 1000
 
-        self.spi_ifc = pig.spi_open(0, int(opts['--baud'])*1000, 0x00C0)
+        self.spi_ifc = pig.spi_open(0, self.kbaud, 0x00C0)
         self.pig.set_mode(self.mute_pin_bar, pigpio.OUTPUT)
         self.mute(False)
 
-        if self.opts['--verbose']:
+        if self.verbose:
             hdw_ver = self.pig.get_hardware_revision()
             print('Volume found hardware ver %06x'%(hdw_ver))
-            print('  and using SPI0 at %s kbaud'%(opts['--baud']))
+            print('  and using SPI0 at %d kbaud'%(self.kbaud//1000))
         self.write(bytes([self.gain, self.gain,]))
 
 
@@ -121,7 +123,7 @@ class SpiVolume():
             SPI transfer function.
         """
         data_hex = '%02X %02X'%tuple(data)
-        if self.opts['--verbose']:
+        if self.verbose:
             print('write', data_hex)
         if self.log_file:
             with open(self.log_file, 'w') as fout:
@@ -198,7 +200,7 @@ def test(opts):
         then reverse, and walk the volume back down.
     """
     pig = pigpio.pi()  # open the pi gpio
-    spi_vol = SpiVolume(pig, opts)
+    spi_vol = SpiVolume(pig, **opts)
 
     t_start = time.time()
     done = False                        # loop until our 10 seconds elapses

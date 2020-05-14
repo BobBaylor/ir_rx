@@ -12,25 +12,25 @@ def init_devs(pig=None):
     """
     if not pig:
         pig = pigpio.pi()  # open the pi gpio
-    vol_opts = {'--baud': 500,
-                '--mute': 25,
-                '--init': 180, # init at -95 + 180 * 0.5 dB = -5 dB
-                '--file': '',  # '/home/pi/ir_rx/ir_vol.txt',
-                '--verbose': False,
-                '--address': 122,
-               }
-    spi_vol = SpiVolume(pig, vol_opts)
-    ir_opts = {'--glitch': 100,
-               '--pin': 3,
-               '--pre': 50,
-               '--file': '',
-               '--post': 15,
-               '--raw': '',
-               '--short': 2,        # ignore codes w/ < 2 events
-               '--tolerance': 15,   # percent deviation from expected periods
-               '--verbose': False,
-              }
-    rcvr = IrReceiver(pig, ir_opts)
+
+    spi_vol = SpiVolume(pig, **{'--baud': 500,
+                                # '--mute': 25,
+                                '--init': 180, # init at -95 + 180 * 0.5 dB = -5 dB
+                                # '--file': '',  # '/home/pi/ir_rx/ir_vol.txt',
+                                # '--verbose': False,
+                                # '--address': 122,
+                               })
+
+    rcvr = IrReceiver(pig, **{'--glitch': 100,
+                              '--pin': 3,
+                              '--pre': 50,
+                              '--file': '',
+                              '--post': 15,
+                              '--raw': '',
+                              '--short': 2,        # ignore codes w/ < 2 events
+                              '--tolerance': 15,   # percent deviation from expected periods
+                              '--verbose': False,
+                             })
     return pig, spi_vol, rcvr
 
 
